@@ -1,0 +1,140 @@
+import React, { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+
+export default function StoreSimulator() {
+  const [balance, setBalance] = useState(50.0);
+  const [level, setLevel] = useState(1);
+  const [xp, setXp] = useState(0);
+  const [xpToNext, setXpToNext] = useState(50);
+  const [cart, setCart] = useState([]);
+  const [achievements, setAchievements] = useState([]);
+  const [message, setMessage] = useState("");
+  const [view, setView] = useState("menu");
+
+  const shirts = {
+    marvel: { price: 2.99, unlock: 1 },
+    cartoon: { price: 1.49, unlock: 1 },
+    patterned: { price: 3.49, unlock: 2 },
+    luxury: { price: 10.0, unlock: 5 },
+    glow: { price: 7.5, unlock: 3 },
+    plain: {
+      colors: ["Red", "Blue", "Green", "Yellow", "Black", "White"],
+      price: 2.0,
+      unlock: 1,
+    },
+  };
+
+  const unlockShirts = () => {
+    return Object.keys(shirts).filter((key) => shirts[key].unlock <= level);
+  };
+
+  const addToCart = (item, price) => {
+    if (balance < price) {
+      setMessage("Not enough balance!");
+      return;
+    }
+    setBalance(balance - price);
+    setCart([...cart, { item, price }]);
+    gainXp(Math.floor(price * 2));
+    setMessage(`${item} added to cart!`);
+  };
+
+  const gainXp = (amount) => {
+    let newXp = xp + amount;
+    let newLevel = level;
+    let newBalance = balance;
+    let newXpToNext = xpToNext;
+    if (newXp >= xpToNext) {
+      newXp -= xpToNext;
+      newLevel += 1;
+      newBalance += 20;
+      newXpToNext = Math.floor(newXpToNext * 1.5);
+      setMessage(`Level up! You're now Level ${newLevel} and earned $20 bonus!`);
+    }
+    setXp(newXp);
+    setLevel(newLevel);
+    setBalance(newBalance);
+    setXpToNext(newXpToNext);
+  };
+
+  const checkout = () => {
+    setCart([]);
+    setMessage("Checkout complete! Thanks for shopping!");
+  };
+
+  return (
+    <div className="p-6 max-w-md mx-auto">
+      <Card className="mb-4">
+        <CardContent>
+          <h1 className="text-xl font-bold mb-2">Ultimate Store Simulator</h1>
+          <p>Balance: ${balance.toFixed(2)}</p>
+          <p>
+            Level: {level} | XP: {xp}/{xpToNext}
+          </p>
+        </CardContent>
+      </Card>
+
+      {view === "menu" && (
+        <div className="grid gap-2">
+          <Button onClick={() => setView("shop")}>Shop Shirts</Button>
+          <Button onClick={() => setView("cart")}>View Cart</Button>
+          <Button onClick={checkout}>Checkout</Button>
+        </div>
+      )}
+
+      {view === "shop" && (
+        <div className="grid gap-2">
+          {unlockShirts().map((type) => (
+            <Card key={type}>
+              <CardContent>
+                <p className="font-semibold">{type.toUpperCase()}</p>
+                {type === "plain" ? (
+                  shirts.plain.colors.map((c) => (
+                    <Button
+                      key={c}
+                      onClick={() => addToCart(`${c} Plain Shirt`, shirts.plain.price)}
+                      className="m-1"
+                    >
+                      Buy {c} Shirt (${shirts.plain.price.toFixed(2)})
+                    </Button>
+                  ))
+                ) : (
+                  <Button
+                    onClick={() => addToCart(`${type} Shirt`, shirts[type].price)}
+                    className="mt-2"
+                  >
+                    Buy {type} Shirt (${shirts[type].price.toFixed(2)})
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+          <Button onClick={() => setView("menu")} variant="secondary">
+            Back
+          </Button>
+        </div>
+      )}
+
+      {view === "cart" && (
+        <div>
+          <h2 className="text-lg font-bold mb-2">Your Cart</h2>
+          {cart.length === 0 ? (
+            <p>No items in cart</p>
+          ) : (
+            cart.map((c, i) => (
+              <p key={i}>
+                {c.item} - ${c.price.toFixed(2)}
+              </p>
+            ))
+          )}
+          <Button onClick={() => setView("menu")} className="mt-2">
+            Back
+          </Button>
+        </div>
+      )}
+
+      {message && <p className="mt-4 font-semibold text-blue-600">{message}</p>}
+    </div>
+  );
+}
